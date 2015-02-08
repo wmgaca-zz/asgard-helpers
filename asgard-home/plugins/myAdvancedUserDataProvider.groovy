@@ -9,17 +9,51 @@ import org.apache.zookeeper.ZooKeeper
 
 class MyAdvancedUserDataProvider implements AdvancedUserDataProvider {
 
-    String getZKData() {
-        zk = ZooKeeper("localhost:2181", 3000, null)
-        zk.start()
-        String data = new String(zk.getData("/production/docker/terra/0.0.1/env", null, null), "UTF-8")
-        data
+    class DubizzleAppContext {
+
+        String name
+        String version
+
+        DubizzleAppContext(Image image) {
+            name = getAppName(image)
+            version = getAppVersion(image)
+        }
+
+        private String getAppName(Image image) {
+            image.getName().split('-')[0]
+        }
+
+        private String getAppVersion(Image image) {
+            image.getName().split('-')[1]
+        }
+    }
+
+    class ZKHelper {
+
+        static ZooKeeper instance = null
+
+        static getConnString() {
+            System.getenv()['ZK_CONN_STRING']
+        }
+
+        static ZooKeeper getZooKeeper() {
+            if (instance == null) {
+                instance = new ZooKeeper(getConnString(), 3000, null)
+            }
+            instance
+        }
+    }
+
+    private byte[] getZKData(DubizzleAppContext appContext) {
+        ZKHelper.getZooKeeper().getData(
+            "/production/docker/${appContext.name}/${appContext.version}/env",
+            null,
+            null
+        )
     }
 
     String buildUserData(LaunchContext launchContext) {
-        println "Something, somewhere, more or less."
-        println getZKData()
-
-        DatatypeConverter.printBase64Binary("You failed at life.".bytes)
+        DubizzleAppContext appContext = new DubizzleAppContext(launchContext.image)
+        DatatypeConverter.printBase64Binary(getZKData(appContext))
     }
 }
