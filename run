@@ -1,0 +1,29 @@
+#!/bin/bash
+
+JAR=bin/asgard-standalone.jar
+
+# TODO(wmgaca): Ubuntu support maybe?
+JAVA_HOME=/Library/Java/Home
+
+# Download the jar if needed
+if [ ! -f "$JAR" ]
+then
+    echo "Downloading Asgard, this will take a while..."
+    wget https://github.com/Netflix/asgard/releases/download/1.5.1/asgard-standalone.jar -O "$JAR"
+fi
+
+echo "Checking the config here and there"
+
+# ~/.asgard
+ln -s asgard-home $HOME/.asgard
+
+# Add plugins's depedencies jars
+for file in dependencies/*
+do
+    sudo ln -s $file $JAVA_HOME/lib/endorsed
+done
+
+echo "Running Asgard..."
+
+# Run, Forest, Run!
+java -Xmx1024M -XX:MaxPermSize=128m -jar $JAR
