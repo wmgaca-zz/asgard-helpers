@@ -15,12 +15,12 @@ fi
 echo "Checking the config here and there"
 
 # ~/.asgard
-ln -s asgard-home $HOME/.asgard
+ln -sfh $(pwd)/asgard-home $HOME/.asgard
 
 # Add plugins's depedencies jars
 for file in dependencies/*
 do
-    sudo ln -s $file $JAVA_HOME/lib/endorsed
+    sudo ln -sf $(pwd)/$file $JAVA_HOME/lib/endorsed
 done
 
 echo "Running Asgard..."
