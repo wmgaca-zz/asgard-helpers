@@ -5,6 +5,12 @@ JAR=bin/asgard-standalone.jar
 # TODO(wmgaca): Ubuntu support maybe?
 JAVA_HOME=/Library/Java/Home
 
+if [ -z "$ZK_CONN_STRING" ]
+then
+    echo "Using local ZK => localhost:2181"
+    export ZK_CONN_STRING="localhost:2181"
+fi
+
 # Download the jar if needed
 if [ ! -f "$JAR" ]
 then
