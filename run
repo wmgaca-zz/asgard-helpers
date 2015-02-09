@@ -2,8 +2,13 @@
 
 JAR=bin/asgard-standalone.jar
 
-# TODO(wmgaca): Ubuntu support maybe?
-JAVA_HOME=/Library/Java/Home
+if [[ "$(uname)" == "Darwin" ]]
+then
+    JAVA_HOME=/Library/Java/Home
+else
+    echo "You may wanna export your JAVA_HOME so we know where to link our dependencies."
+    exit
+fi
 
 if [ -z "$ZK_CONN_STRING" ]
 then
@@ -32,4 +37,4 @@ done
 echo "Running Asgard..."
 
 # Run, Forest, Run!
-java -Xmx1024M -XX:MaxPermSize=128m -jar $JAR
+java -Xmx1024M -XX:MaxPermSize=256m -jar $JAR
