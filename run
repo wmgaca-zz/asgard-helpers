@@ -16,6 +16,12 @@ then
     export ZK_CONN_STRING="localhost:2181"
 fi
 
+if [ -z "$ZK_AES_KEY" ]
+then
+    echo "Nope. ZK_AES_KEY not set."
+    exit
+fi
+
 # Download the jar if needed
 if [ ! -f "$JAR" ]
 then
