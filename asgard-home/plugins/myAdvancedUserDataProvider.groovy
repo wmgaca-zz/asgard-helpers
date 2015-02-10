@@ -1,9 +1,14 @@
+import groovy.json.JsonSlurper
+
 import com.netflix.asgard.userdata.DefaultUserDataProvider
 import com.netflix.asgard.UserContext
 import com.netflix.asgard.plugin.AdvancedUserDataProvider
 import com.netflix.asgard.model.LaunchContext
 import javax.xml.bind.DatatypeConverter
+import javax.crypto.spec.SecretKeySpec
+import javax.crypto.Cipher
 import com.amazonaws.services.ec2.model.Image
+
 import org.apache.zookeeper.ZooKeeper
 
 
@@ -32,6 +37,10 @@ class MyAdvancedUserDataProvider implements AdvancedUserDataProvider {
 
         static ZooKeeper instance = null
 
+        static getAESKey() {
+            System.getenv()['ZK_AES_KEY']
+        }
+
         static getConnString() {
             System.getenv()['ZK_CONN_STRING']
         }
@@ -42,18 +51,44 @@ class MyAdvancedUserDataProvider implements AdvancedUserDataProvider {
             }
             instance
         }
+
+        static byte[] getRawData(DubizzleAppContext appContext) {
+            ZKHelper.getZooKeeper().getData(
+                "/production/docker/${appContext.name}/${appContext.version}/env",
+                null,
+                null
+            )
+        }
+
+        static String getRaw(DubizzleAppContext appContext) {
+            def data = new String(getRawData(appContext))
+
+            def cipher = Cipher.getInstance("AES/ECB/NoPadding")
+            SecretKeySpec key = new SecretKeySpec(getAESKey().getBytes('UTF-8'), 'AES')
+            cipher.init(Cipher.DECRYPT_MODE, key)
+
+            data = new String(cipher.doFinal(data.decodeBase64()), "UTF-8")
+
+            (new JsonSlurper()).parseText(data)
+        }
+
+        static Map getMap(DubizzleAppContext appContext) {
+            (new JsonSlurper()).parseText(getRaw(appContext))
+        }
     }
 
-    private byte[] getZKData(DubizzleAppContext appContext) {
-        ZKHelper.getZooKeeper().getData(
-            "/production/docker/${appContext.name}/${appContext.version}/env",
-            null,
-            null
-        )
+    String formatMap(Map data) {
+        def arr = []
+        for (entry in data) {
+            arr.add("export $entry\n")
+        }
+        arr.join("\n")
     }
 
     String buildUserData(LaunchContext launchContext) {
         DubizzleAppContext appContext = new DubizzleAppContext(launchContext.image)
-        DatatypeConverter.printBase64Binary(getZKData(appContext))
+        def userData = formatMap(ZKHelper.getMap(appContext))
+        DatatypeConverter.printBase64Binary(userData.getBytes('UTF-8'))
     }
 }
+
