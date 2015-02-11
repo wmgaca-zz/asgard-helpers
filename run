@@ -1,8 +1,8 @@
 #!/bin/bash
 
-JAR=bin/asgard-standalone.jar
-
 DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+JAR=$DIR/bin/asgard-standalone.jar
 
 if [ -z "$ZK_CONN_STRING" ]
 then
