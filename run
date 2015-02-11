@@ -2,6 +2,8 @@
 
 JAR=bin/asgard-standalone.jar
 
+DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
 if [[ "$(uname)" == "Darwin" ]]
 then
     JAVA_HOME=/Library/Java/Home
@@ -32,15 +34,9 @@ fi
 echo "Checking the config here and there"
 
 # ~/.asgard
-ln -sfh $(pwd)/asgard-home $HOME/.asgard
-
-# Add plugins's depedencies jars
-for file in dependencies/*
-do
-    sudo ln -sf $(pwd)/$file $JAVA_HOME/lib/endorsed
-done
+ln -sfh $DIR/asgard-home $HOME/.asgard
 
 echo "Running Asgard..."
 
 # Run, Forest, Run!
-java -Xmx1024M -XX:MaxPermSize=256m -jar $JAR
+java -Xmx1024M -XX:MaxPermSize=256m -Djava.endorsed.dirs=$DIR/dependencies -jar $JAR
