@@ -74,7 +74,7 @@ class DubizzleAdvancedUserDataProvider implements AdvancedUserDataProvider {
             //
             // What I'm doing here is bad and I should feel bad, I know.
             // Feeling bad while blaming PySysEnv...
-            data = "python /Users/wmgaca/.asgard/bin/json ${data}".execute().text
+            data = "python ${System.getProperty("user.home")}/.asgard/bin/json ${data}".execute().text
 
             new JsonSlurper().parseText(data)
         }
