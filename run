@@ -4,14 +4,6 @@ JAR=bin/asgard-standalone.jar
 
 DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 
-if [[ "$(uname)" == "Darwin" ]]
-then
-    JAVA_HOME=/Library/Java/Home
-else
-    echo "You may wanna export your JAVA_HOME so we know where to link our dependencies."
-    exit
-fi
-
 if [ -z "$ZK_CONN_STRING" ]
 then
     echo "Using local ZK => localhost:2181"
