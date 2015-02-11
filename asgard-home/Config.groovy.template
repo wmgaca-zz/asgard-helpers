@@ -12,5 +12,5 @@ cloud {
         publicResourceAccounts=['amazon']
 }
 plugin {
-        advancedUserDataProvider='myAdvancedUserDataProvider'
+        advancedUserDataProvider='dubizzleAdvancedUserDataProvider'
 }

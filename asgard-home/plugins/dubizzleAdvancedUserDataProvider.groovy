@@ -1,18 +1,16 @@
 import groovy.json.JsonSlurper
-
 import com.netflix.asgard.userdata.DefaultUserDataProvider
-import com.netflix.asgard.UserContext
 import com.netflix.asgard.plugin.AdvancedUserDataProvider
+import com.netflix.asgard.UserContext
 import com.netflix.asgard.model.LaunchContext
+import com.amazonaws.services.ec2.model.Image
 import javax.xml.bind.DatatypeConverter
 import javax.crypto.spec.SecretKeySpec
 import javax.crypto.Cipher
-import com.amazonaws.services.ec2.model.Image
-
 import org.apache.zookeeper.ZooKeeper
 
 
-class MyAdvancedUserDataProvider implements AdvancedUserDataProvider {
+class DubizzleAdvancedUserDataProvider implements AdvancedUserDataProvider {
 
     class DubizzleAppContext {
 
@@ -35,19 +33,16 @@ class MyAdvancedUserDataProvider implements AdvancedUserDataProvider {
 
     class ZKHelper {
 
+        static final String AES_KEY = System.getenv()['ZK_AES_KEY']
+
+        static final String CONN_STRING = System.getenv()['ZK_CONN_STRING']
+
         static ZooKeeper instance = null
 
-        static getAESKey() {
-            System.getenv()['ZK_AES_KEY']
-        }
-
-        static getConnString() {
-            System.getenv()['ZK_CONN_STRING']
-        }
 
         static ZooKeeper getZooKeeper() {
             if (instance == null) {
-                instance = new ZooKeeper(getConnString(), 3000, null)
+                instance = new ZooKeeper(CONN_STRING, 3000, null)
             }
             instance
         }
@@ -60,20 +55,28 @@ class MyAdvancedUserDataProvider implements AdvancedUserDataProvider {
             )
         }
 
-        static String getRaw(DubizzleAppContext appContext) {
+        static Map getMappedData(DubizzleAppContext appContext) {
             def data = new String(getRawData(appContext))
 
             def cipher = Cipher.getInstance("AES/ECB/NoPadding")
-            SecretKeySpec key = new SecretKeySpec(getAESKey().getBytes('UTF-8'), 'AES')
+            SecretKeySpec key = new SecretKeySpec(AES_KEY.getBytes('UTF-8'), 'AES')
             cipher.init(Cipher.DECRYPT_MODE, key)
 
+            // Decrypt & B64 decode
             data = new String(cipher.doFinal(data.decodeBase64()), "UTF-8")
 
-            (new JsonSlurper()).parseText(data)
-        }
+            // Remove trailing "{"
+            data = data.replaceAll(/\{+$/, "")
 
-        static Map getMap(DubizzleAppContext appContext) {
-            (new JsonSlurper()).parseText(getRaw(appContext))
+            // We're dealing with a json.dumps(json.dumps(s)) situation over
+            // here. It's not producing a JSON that JsonSlurper is capable of
+            // understanding.
+            //
+            // What I'm doing here is bad and I should feel bad, I know.
+            // Feeling bad while blaming PySysEnv...
+            data = "python /Users/wmgaca/.asgard/bin/json ${data}".execute().text
+
+            new JsonSlurper().parseText(data)
         }
     }
 
@@ -87,7 +90,7 @@ class MyAdvancedUserDataProvider implements AdvancedUserDataProvider {
 
     String buildUserData(LaunchContext launchContext) {
         DubizzleAppContext appContext = new DubizzleAppContext(launchContext.image)
-        def userData = formatMap(ZKHelper.getMap(appContext))
+        def userData = formatMap(ZKHelper.getMappedData(appContext))
         DatatypeConverter.printBase64Binary(userData.getBytes('UTF-8'))
     }
 }
